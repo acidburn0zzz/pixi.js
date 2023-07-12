@@ -1,46 +1,90 @@
 {
-    "name": "pixi.js",
-    "version": "1.5.3",
-    "description": "Pixi.js is a fast lightweight 2D library that works across all devices.",
-
-    "author": "Mat Groves",
-    "contributors": [
-        "Chad Engler <chad@pantherdev.com>"
-    ],
-    "logo": "http://www.goodboydigital.com/pixijs/logo_small.png",
-
-    "homepage": "http://goodboydigital.com/",
-    "bugs": "https://github.com/GoodBoyDigital/pixi.js/issues",
-    "license": "MIT",
-    "licenseUrl": "http://www.opensource.org/licenses/mit-license.php",
-
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/GoodBoyDigital/pixi.js.git"
-    },
-
-    "main": "bin/pixi.js",
-
-    "scripts": {
-        "test": "grunt travis --verbose"
-    },
-
-    "dependencies": {},
-    "devDependencies": {
-        "grunt": "~0.4.1",
-        "grunt-contrib-jshint": "~0.8",
-        "grunt-contrib-uglify": "~0.2",
-        "grunt-contrib-connect": "~0.5",
-        "grunt-contrib-yuidoc": "~0.5",
-        "grunt-concat-sourcemap": "~0.4",
-        "grunt-contrib-concat": "~0.3",
-        "mocha": "~1.15",
-        "chai": "~1.8",
-        "karma": "~0.12",
-        "karma-chrome-launcher": "~0.1",
-        "karma-firefox-launcher": "~0.1",
-        "karma-mocha": "~0.1",
-        "karma-spec-reporter": "~0.0.6",
-        "grunt-contrib-watch": "~0.5.3"
-    }
+  "name": "pixi.js-monorepo",
+  "private": true,
+  "version": "7.3.0-rc",
+  "workspaces": [
+    "bundles/*",
+    "packages/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "start": "run-s watch",
+    "clean:build": "rimraf \"{bundles,packages,out}/*/{dist,lib}\"",
+    "clean:types": "rimraf \"{bundles,packages}/*/lib/**/*.d.ts\"",
+    "clean:out": "rimraf out",
+    "clean:dist": "rimraf dist/*",
+    "clean": "run-s clean:*",
+    "test:pkg": "ts-node --transpile-only ./test/index.ts",
+    "test:pkg:debug": "cross-env DEBUG_MODE=1 ts-node --transpile-only ./test/index.ts",
+    "test": "npx jest --silent",
+    "test:debug": "cross-env DEBUG_MODE=1 npx jest",
+    "coverage": "npm run test -- --coverage --maxWorkers=4",
+    "docs": "mkdirp dist && webdoc -R README.md",
+    "lint": "eslint --cache --ext .js --ext .ts test bundles packages scripts --ignore-path .gitignore --max-warnings 0",
+    "lintfix": "run-s \"lint -- --fix\"",
+    "types": "tsc --noEmit",
+    "types:strict": "npm run types -- --strictNullChecks | ts-node ./scripts/filterTypeScriptErrors.ts",
+    "prebuild": "run-s clean:build",
+    "build": "rollup -c --failAfterWarnings",
+    "prebuild:types": "run-s clean:types clean:out",
+    "build:types": "tsc -p tsconfig.types.json && ts-node scripts/fixTypes.ts",
+    "postbuild:types": "copyfiles -u 1 \"out/**/*\" . && run-s clean:out",
+    "watch": "rollup -cw",
+    "dist": "run-s lint types types:strict build build:types docs",
+    "postdist": "copyfiles -f bundles/*/dist/* dist && copyfiles -f packages/*/dist/* dist/packages",
+    "codesandbox-ci": "run-s build build:types prepublish-ci",
+    "prerelease": "run-s clean:build test dist",
+    "release": "ts-node ./scripts/release.ts",
+    "prepublish-ci": "ts-node ./scripts/prepublish.ts",
+    "publish-ci": "workspaces-run --only-fs=\"{packages,bundles}/*\" -- npm publish",
+    "webdoc": "webdoc"
+  },
+  "pre-commit": [
+    "lintfix"
+  ],
+  "engines": {
+    "node": ">=18",
+    "yarn": "please-use-npm",
+    "npm": ">=8"
+  },
+  "devDependencies": {
+    "@pixi/eslint-config": "^4.0.1",
+    "@pixi/webdoc-template": "^1.5.5",
+    "@rollup/plugin-alias": "^5.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@types/inquirer": "^8.0.0",
+    "@types/jest": "^26.0.0",
+    "@webdoc/cli": "^2.2.0",
+    "copyfiles": "^2.1.0",
+    "cross-env": "^5.2.0",
+    "electron": "^12.0.0",
+    "esbuild": "^0.18.11",
+    "eslint": "^8.25.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsdoc": "^39.2.9",
+    "eslint-plugin-simple-import-sort": "^8.0.0",
+    "glob": "^7.1.3",
+    "http-server": "^14.1.1",
+    "inquirer": "^8.0.0",
+    "jest": "^26.0.0",
+    "jest-electron": "^0.1.12",
+    "jest-extended": "^1.2.1",
+    "jest-raw-loader": "^1.0.1",
+    "npm-run-all": "^4.1.5",
+    "pre-commit": "^1.2.2",
+    "rimraf": "^2.6.3",
+    "rollup": "^3.0.0",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "rollup-plugin-string": "^3.0.0",
+    "semver": "^7.3.8",
+    "tree-kill": "^1.2.2",
+    "ts-jest": "^26.0.0",
+    "ts-node": "^9.0.0",
+    "tsconfig-paths": "^3.10.1",
+    "typescript": "~4.3.0",
+    "workspaces-run": "^1.0.2",
+    "yargs-parser": "^21.0.1"
+  }
 }
